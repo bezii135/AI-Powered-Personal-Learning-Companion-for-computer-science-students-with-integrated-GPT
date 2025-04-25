@@ -1,23 +1,53 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+// pages/chat.js (Chat Page)
+import './style.css'
+import { useState } from 'react';
 
-const GPTChat = () => {
-  const [input, setInput] = useState('');
-  const [reply, setReply] = useState('');
+export default function Chat() {
+  const [messages, setMessages] = useState([]);
+  const [userMessage, setUserMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = async () => {
-    const res = await axios.post('http://localhost:5000/api/chat', { message: input });
-    setReply(res.data.reply);
+  const handleSendMessage = async () => {
+    setMessages([...messages, { text: userMessage, sender: 'user' }]);
+    setLoading(true);
+
+    const response = await fetch('/api/gpt', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: userMessage }),
+    });
+
+    const data = await response.json();
+    setMessages([...messages, { text: userMessage, sender: 'user' }, { text: data.message, sender: 'gpt' }]);
+    setUserMessage('');
+    setLoading(false);
   };
 
   return (
     <div>
-      <h2>Ask GPT-4 Anything!</h2>
-      <input value={input} onChange={e => setInput(e.target.value)} />
-      <button onClick={handleSend}>Send</button>
-      <p><strong>GPT:</strong> {reply}</p>
+      <h1>AI Chat</h1>
+      <div className="chat-container">
+        <div className="chat-box">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={msg.sender}>
+              <p>{msg.text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="input-container">
+          <input
+            type="text"
+            value={userMessage}
+            onChange={(e) => setUserMessage(e.target.value)}
+            placeholder="Type your message..."
+          />
+          <button onClick={handleSendMessage} disabled={loading}>
+            {loading ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default GPTChat;
+}
