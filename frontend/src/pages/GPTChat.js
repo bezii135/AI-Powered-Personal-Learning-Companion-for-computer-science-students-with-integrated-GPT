@@ -1,26 +1,34 @@
-// pages/chat.js (Chat Page)
-import './style.css'
+import './style.css';
 import { useState } from 'react';
 
-export default function Chat() {
+export default function GPTChat() {
   const [messages, setMessages] = useState([]);
   const [userMessage, setUserMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSendMessage = async () => {
-    setMessages([...messages, { text: userMessage, sender: 'user' }]);
+    if (!userMessage.trim()) return;
+
+    const updatedMessages = [...messages, { text: userMessage, sender: 'user' }];
+    setMessages(updatedMessages);
     setLoading(true);
 
-    const response = await fetch('/api/gpt', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: userMessage }),
-    });
+    try {
+      const response = await fetch('/api/gpt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
 
-    const data = await response.json();
-    setMessages([...messages, { text: userMessage, sender: 'user' }, { text: data.message, sender: 'gpt' }]);
+      const data = await response.json();
+      setMessages([...updatedMessages, { text: data.message, sender: 'gpt' }]);
+    } catch (error) {
+      console.error('Error fetching GPT response:', error);
+      setMessages([...updatedMessages, { text: 'Error getting response from GPT.', sender: 'gpt' }]);
+    }
+
     setUserMessage('');
     setLoading(false);
   };
